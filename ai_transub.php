@@ -1,12 +1,12 @@
 <?php
   $conf = array(
-    "url"=>"http://127.0.0.11:11434",
+    "url"=>"http://127.0.0.1:11434",
     "model"=>"llama3:latest",
     "cutoff"=>100,
-		"autosave"=>50,
+    "autosave"=>50,
     "debug"=>false,
-		"tmpdir"=>"C:/Temp",
-    "sample"=>array(
+    "tmpdir"=>"C:/Temp",
+		"sample"=>array(
 			"Translate all next messages to Bahasa Indonesia, retain text formatting in translated text, only returned translated text with formatting only, neved include other text that not included in original message.",
 			"Baik, saya akan menerjemahkan seluruh chat berikutnya ke dalam Bahasa Indonesia dengan tetap mempertahankan format teks yang ada.",
 			"Good morning",
