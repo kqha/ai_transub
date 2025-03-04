@@ -1,16 +1,31 @@
 <?php
   $conf = array(
-    "url"=>"http://10.10.10.1:11434",
+    "url"=>"http://127.0.0.1:11434",
     "model"=>"llama3:latest",
     "cutoff"=>100,
+		"autosave"=>50,
     "debug"=>false,
-    "sample_instruction"=>"Translate all next messages to Bahasa Indonesia, retain text formatting in translated text, only returned translated text with formatting only, neved include other text that not included in original message.",
-    "sample_response"=>"Baik, saya akan menerjemahkan seluruh chat berikutnya ke dalam Bahasa Indonesia dengan tetap mempertahankan format teks yang ada.",
+		"tmpdir"=>"C:/Temp",
+    "sample"=>array(
+			"Translate all next messages to Bahasa Indonesia, retain text formatting in translated text, only returned translated text with formatting only, neved include other text that not included in original message.",
+			"Baik, saya akan menerjemahkan seluruh chat berikutnya ke dalam Bahasa Indonesia dengan tetap mempertahankan format teks yang ada.",
+			"Good morning",
+			"Selamat pagi",
+		),
   );
   
   error_reporting(E_ERROR);
   
-  function _getURL($url,$post=null,$file=null,$headers=null,$referer=null) {
+  function _autosave() {
+		global $tmpdata,$tmpfile,$srt,$lines,$pos;
+		
+		$tmpdata['pos'] = $pos;
+		$tmpdata['srt'] = $srt;
+		$tmpdata['lines'] = $lines;
+		file_put_contents($tmpfile,serialize($tmpdata));
+	}
+	
+	function _getURL($url,$post=null,$file=null,$headers=null,$referer=null) {
 		$ch = curl_init();
     curl_setopt($ch,CURLOPT_URL,$url);
 		curl_setopt($ch,CURLOPT_BINARYTRANSFER,true);
@@ -47,17 +62,11 @@
   function _translate($txt) {
     global $chat, $conf;
     
-    if ((count($chat)==0) || (count($chat)>=$conf['cutoff'])) {
-      $chat = array(
-        array(
-          "role"=>"user",
-          "content"=>$conf['sample_instruction'],
-        ),
-        array(
-          "role"=>"assistant",
-          "content"=>$conf['sample_response'],
-        ),
-      );
+    if ((count($chat)==0) || ((count($chat)-count($conf['sample']))>=($conf['cutoff']*2))) {
+			if (count($chat)>0) {
+				echo ($conf['debug'])? "Cutoff Translation\n":"[C]";
+			}
+      $chat = array(array("role"=>"user","content"=>$conf['sample'][0],),array("role"=>"assistant","content"=>$conf['sample'][1],),array("role"=>"user","content"=>$conf['sample'][2],),array("role"=>"assistant","content"=>$conf['sample'][3],),);
     }
     $chat[] = array(
       "role"=>"user",
@@ -88,39 +97,69 @@
     die("Usage:\nai_transub.php [.srt file]\n");
   }
   
-  echo "Collecting lines to translate...\n";
-  $chat = array();
-  $srt = explode(chr(10),file_get_contents($_SERVER['argv'][1]));
-  $lines = array();
-  $stt = 0;
-  $n = 0;
-  foreach($srt as $key=>$value) {
-    $value = trim($value);
-    switch ($stt) {
-      case 0:
-        if (is_numeric($value)) {
-          $stt = 1;
-          $n = $key;
-        }
-        break;
-      case 1:
-        if ($key>$n+1) {
-          if ($value=="") {
-            $stt = 0;
-          } else $lines[] = array($key,$value);
-        }
-        break;
-    }
-  }
-  echo "Translating ".count($lines)." lines...\n";
-  foreach($lines as $value) {
+	//Checking temporary save
+	$tmpfile = $conf['tmpdir']."/ai_transub.tmp";
+	$hash = sha1_file($_SERVER['argv'][1]);
+	if (file_exists($tmpfile)) {
+		$tmpdata = unserialize(file_get_contents($tmpfile));
+		if ($hash==$tmpdata['hash']) {
+			echo "Continuing previous progress...\n";
+			$pos = $tmpdata['pos'];
+			$srt = $tmpdata['srt'];
+			$lines = $tmpdata['lines'];
+		} else {
+			echo "WARNING! Overwriting other temporary progress!\n";
+			$tmpdata = array("hash"=>$hash);
+		}
+	} elseif ($conf['tmpdir']!="") $tmpdata = array("hash"=>$hash);
+	//End of checking temporary save
+	
+	if (!isset($tmpdata) || (count($tmpdata)==1)) {
+		echo "Collecting lines to translate...\n";
+		$srt = explode(chr(10),file_get_contents($_SERVER['argv'][1]));	//break every line to an array
+		$lines = array();
+		$stt = 0;
+		$n = 0;
+		$pos = 0;
+		foreach($srt as $key=>$value) {
+			$value = trim($value);
+			switch ($stt) {
+				case 0:
+					if (is_numeric($value)) {
+						$stt = 1;
+						$n = $key;
+					}
+					break;
+				case 1:
+					if ($key>$n+1) {
+						if ($value=="") {
+							$stt = 0;
+						} else $lines[] = array($key,$value);
+					}
+					break;
+			}
+		}
+		if (isset($tmpdata)) _autosave();
+	}
+	
+  echo "Translating ".(count($lines)-$pos)." lines...\n";
+	$chat = array();
+  for ($a=$pos;$a<count($lines);$a++) {
+		$value = $lines[$a];
     $trans = _translate($value[1]);
     if ($conf['debug']) {
       echo "Original Text: ".$value[1]."\n";
       echo "Translation: ".$trans."\n";
     } else echo ".";
     $srt[$value[0]] = $trans;
+		if (($a+1)%$conf['autosave']==0) {
+			echo ($conf['debug'])? "Autosaving\n":"[S]";
+			$pos = $a;
+			_autosave();
+		}
   }
+	
+	if (file_exists($tmpfile)) unlink($tmpfile);
   file_put_contents("translated.srt",implode(chr(13).chr(10),$srt));
   echo "\nDone translating!\nYou can find 'translated.srt' in current directory (".getcwd().")\n";
 ?>
