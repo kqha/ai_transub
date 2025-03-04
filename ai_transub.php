@@ -7,7 +7,7 @@
     "debug"=>false,
     "tmpdir"=>"C:/Temp",
     "sample"=>array(
-      "Translate all next messages to Bahasa Indonesia, retain text formatting in translated text, only returned translated text with formatting only, neved include other text that not included in original message.",
+      "Translate all next messages to Bahasa Indonesia, retain text formatting in translated text, only returned translated text with formatting only, neved add other text that not included in original message.",
       "Baik, saya akan menerjemahkan seluruh chat berikutnya ke dalam Bahasa Indonesia dengan tetap mempertahankan format teks yang ada.",
       "Good morning",
       "Selamat pagi",
