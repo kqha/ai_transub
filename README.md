@@ -21,7 +21,7 @@ Configuration for this script are structured in an array variable named $conf st
 - autosave: perform automatic saving every time this number of translations done, so the script can continue from latest autosave if there are obstruction during entire translation
 - debug: enable debug (true/false), if enabled every translation lines will be displayed
 - tmpdir: temporary directory for autosave file, make sure this directory is writable by user
-- sample: At least 4 texts to initiate instruction for Ollama (in English prefereably, as per default language of an AI model)
+- sample: At least 4 texts to initiate instruction for Ollama (preferably in English, as per default language of an AI model)
   - First text is the translation instruction, e.g: ```Translate all next messages to Bahasa Indonesia, retain text formatting in translated text, only returned translated text with formatting only, neved include other text that not included in original message.``` 
   - The second text is the expected reply from AI for the previous instruction, e.g: ```Baik, saya akan menerjemahkan seluruh chat berikutnya ke dalam Bahasa Indonesia dengan tetap mempertahankan format teks yang ada.```
   - Third text is an example of a line of subtitle to translate, e.g: ```Good morning```
