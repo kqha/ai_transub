@@ -1,6 +1,6 @@
 <?php
   $conf = array(
-    "url"=>"http://127.0.0.1:11434",
+    "url"=>"http://172.17.6.185:11434",
     "model"=>"llama3:latest",
     "cutoff"=>100,
     "autosave"=>50,
